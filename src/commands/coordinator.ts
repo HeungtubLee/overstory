@@ -167,6 +167,8 @@ async function startCoordinator(args: string[]): Promise<void> {
 		depth: 0,
 		startedAt: new Date().toISOString(),
 		lastActivity: new Date().toISOString(),
+		escalationLevel: 0,
+		stalledSince: null,
 	};
 
 	sessions.push(session);
