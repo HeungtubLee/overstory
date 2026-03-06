@@ -186,16 +186,18 @@ export function createSessionStore(dbPath: string): SessionStore {
 	db.exec("PRAGMA synchronous = NORMAL");
 	db.exec("PRAGMA busy_timeout = 5000");
 
-	// Create schema
+	// Create schema (tables first, then migrations, then indexes)
 	db.exec(CREATE_TABLE);
-	db.exec(CREATE_INDEXES);
 	db.exec(CREATE_RUNS_TABLE);
-	db.exec(CREATE_RUNS_INDEXES);
 
-	// Migrate: rename bead_id → task_id on existing tables
+	// Migrate existing tables BEFORE creating indexes that reference new columns.
 	migrateBeadIdToTaskId(db);
-	// Migrate: add transcript_path column to existing tables
 	migrateAddTranscriptPath(db);
+	migrateAddCoordinatorName(db);
+
+	// Now safe to create indexes (all columns exist).
+	db.exec(CREATE_INDEXES);
+	db.exec(CREATE_RUNS_INDEXES);
 
 	// Prepare statements for frequent operations
 	const upsertStmt = db.prepare<

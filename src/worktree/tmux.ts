@@ -118,12 +118,9 @@ export async function createSession(
 	// causes the session to die instantly. Single-quote wrapping with escaped
 	// single quotes prevents any intermediate shell from expanding variables
 	// before bash receives them. (GitHub #86)
-	const startupScript =
-		exports.length > 0 ? `${exports.join(" && ")} && ${command}` : command;
+	const startupScript = exports.length > 0 ? `${exports.join(" && ")} && ${command}` : command;
 	const wrappedCommand =
-		exports.length > 0
-			? `/bin/bash -c '${startupScript.replace(/'/g, "'\\''")}'`
-			: command;
+		exports.length > 0 ? `/bin/bash -c '${startupScript.replace(/'/g, "'\\''")}'` : command;
 
 	const { exitCode, stderr } = await runCommand(
 		["tmux", "new-session", "-d", "-s", name, "-c", cwd, wrappedCommand],

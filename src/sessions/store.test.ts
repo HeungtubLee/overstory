@@ -588,6 +588,48 @@ describe("edge cases", () => {
 });
 
 // ============================================================
+// SessionStore migration: coordinator_name in runs table
+// ============================================================
+
+describe("createSessionStore migrates runs table coordinator_name", () => {
+	test("opens successfully when existing runs table lacks coordinator_name", async () => {
+		// Close the store created by beforeEach so we can recreate the DB manually.
+		store.close();
+
+		const { Database: Db } = await import("bun:sqlite");
+		const legacyDb = new Db(dbPath);
+		// Drop runs table and recreate WITHOUT coordinator_name (simulates pre-migration DB).
+		legacyDb.exec("DROP TABLE IF EXISTS runs");
+		legacyDb.exec(`
+			CREATE TABLE runs (
+				id TEXT PRIMARY KEY,
+				started_at TEXT NOT NULL,
+				completed_at TEXT,
+				agent_count INTEGER NOT NULL DEFAULT 0,
+				coordinator_session_id TEXT,
+				status TEXT NOT NULL DEFAULT 'active'
+			)
+		`);
+		legacyDb.exec(
+			"INSERT INTO runs (id, started_at, status) VALUES ('legacy-run', '2026-01-01T00:00:00.000Z', 'active')",
+		);
+		legacyDb.close();
+
+		// createSessionStore should migrate the table and create indexes without error.
+		const migratedStore = createSessionStore(dbPath);
+		try {
+			// Verify the store works (no "no such column" error).
+			expect(migratedStore.getAll()).toBeArray();
+		} finally {
+			migratedStore.close();
+		}
+
+		// Re-assign so afterEach cleanup works.
+		store = createSessionStore(join(tempDir, "unused.db"));
+	});
+});
+
+// ============================================================
 // RunStore Tests
 // ============================================================
 
