@@ -876,5 +876,19 @@
 		"status": "completed",
 		"createdAt": "2026-03-07T14:32:12.397Z",
 		"completedAt": "2026-03-07T14:51:44.615Z"
+	},
+	{
+		"id": "group-24f46393",
+		"name": "bugfix-batch-2026-03-10",
+		"memberIssueIds": [
+			"overstory-161b",
+			"overstory-4b7e",
+			"overstory-e35d",
+			"overstory-a516",
+			"overstory-608c"
+		],
+		"status": "active",
+		"createdAt": "2026-03-10T14:11:29.988Z",
+		"completedAt": null
 	}
 ]
