@@ -371,6 +371,7 @@ watchdog:
   tier0Enabled: false
   tier0IntervalMs: 20000
   tier1Enabled: true
+  triageTimeoutMs: 15000
 `);
 
 		const config = await loadConfig(tempDir);
@@ -566,6 +567,151 @@ watchdog:
   tier0IntervalMs: 0
 `);
 		await expect(loadConfig(tempDir)).rejects.toThrow(ValidationError);
+	});
+
+	// rpcTimeoutMs tests
+	test("defaults rpcTimeoutMs to 5000", async () => {
+		const config = await loadConfig(tempDir);
+		expect(config.watchdog.rpcTimeoutMs).toBe(5000);
+	});
+
+	test("accepts valid rpcTimeoutMs", async () => {
+		await writeConfig(`
+watchdog:
+  rpcTimeoutMs: 10000
+`);
+		const config = await loadConfig(tempDir);
+		expect(config.watchdog.rpcTimeoutMs).toBe(10000);
+	});
+
+	test("rejects rpcTimeoutMs below 1000", async () => {
+		await writeConfig(`
+watchdog:
+  rpcTimeoutMs: 999
+`);
+		await expect(loadConfig(tempDir)).rejects.toThrow(ValidationError);
+	});
+
+	test("rejects rpcTimeoutMs above 30000", async () => {
+		await writeConfig(`
+watchdog:
+  rpcTimeoutMs: 30001
+`);
+		await expect(loadConfig(tempDir)).rejects.toThrow(ValidationError);
+	});
+
+	// triageTimeoutMs tests
+	test("defaults triageTimeoutMs to 30000", async () => {
+		const config = await loadConfig(tempDir);
+		expect(config.watchdog.triageTimeoutMs).toBe(30000);
+	});
+
+	test("accepts valid triageTimeoutMs", async () => {
+		await writeConfig(`
+watchdog:
+  triageTimeoutMs: 60000
+`);
+		const config = await loadConfig(tempDir);
+		expect(config.watchdog.triageTimeoutMs).toBe(60000);
+	});
+
+	test("rejects triageTimeoutMs below 5000", async () => {
+		await writeConfig(`
+watchdog:
+  triageTimeoutMs: 4999
+`);
+		await expect(loadConfig(tempDir)).rejects.toThrow(ValidationError);
+	});
+
+	test("rejects triageTimeoutMs above 120000", async () => {
+		await writeConfig(`
+watchdog:
+  triageTimeoutMs: 120001
+`);
+		await expect(loadConfig(tempDir)).rejects.toThrow(ValidationError);
+	});
+
+	test("rejects triageTimeoutMs >= tier0IntervalMs when tier1 is enabled", async () => {
+		// Must include tier0Enabled to avoid deprecated-key migration that would remap tier1Enabled
+		await writeConfig(`
+watchdog:
+  tier0Enabled: true
+  tier1Enabled: true
+  tier0IntervalMs: 30000
+  triageTimeoutMs: 30000
+`);
+		await expect(loadConfig(tempDir)).rejects.toThrow(ValidationError);
+	});
+
+	test("accepts triageTimeoutMs < tier0IntervalMs when tier1 is enabled", async () => {
+		await writeConfig(`
+watchdog:
+  tier0Enabled: true
+  tier1Enabled: true
+  tier0IntervalMs: 60000
+  triageTimeoutMs: 30000
+`);
+		const config = await loadConfig(tempDir);
+		expect(config.watchdog.triageTimeoutMs).toBe(30000);
+	});
+
+	test("allows triageTimeoutMs >= tier0IntervalMs when tier1 is disabled", async () => {
+		await writeConfig(`
+watchdog:
+  tier0Enabled: true
+  tier1Enabled: false
+  tier0IntervalMs: 30000
+  triageTimeoutMs: 30000
+`);
+		const config = await loadConfig(tempDir);
+		expect(config.watchdog.triageTimeoutMs).toBe(30000);
+	});
+
+	// maxEscalationLevel tests
+	test("defaults maxEscalationLevel to 3", async () => {
+		const config = await loadConfig(tempDir);
+		expect(config.watchdog.maxEscalationLevel).toBe(3);
+	});
+
+	test("accepts valid maxEscalationLevel", async () => {
+		await writeConfig(`
+watchdog:
+  maxEscalationLevel: 5
+`);
+		const config = await loadConfig(tempDir);
+		expect(config.watchdog.maxEscalationLevel).toBe(5);
+	});
+
+	test("rejects maxEscalationLevel below 1", async () => {
+		await writeConfig(`
+watchdog:
+  maxEscalationLevel: 0
+`);
+		await expect(loadConfig(tempDir)).rejects.toThrow(ValidationError);
+	});
+
+	test("rejects maxEscalationLevel above 5", async () => {
+		await writeConfig(`
+watchdog:
+  maxEscalationLevel: 6
+`);
+		await expect(loadConfig(tempDir)).rejects.toThrow(ValidationError);
+	});
+
+	test("accepts maxEscalationLevel boundary values 1 and 5", async () => {
+		await writeConfig(`
+watchdog:
+  maxEscalationLevel: 1
+`);
+		let config = await loadConfig(tempDir);
+		expect(config.watchdog.maxEscalationLevel).toBe(1);
+
+		await writeConfig(`
+watchdog:
+  maxEscalationLevel: 5
+`);
+		config = await loadConfig(tempDir);
+		expect(config.watchdog.maxEscalationLevel).toBe(5);
 	});
 
 	test("accepts empty models section", async () => {
